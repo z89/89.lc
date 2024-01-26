@@ -20,36 +20,35 @@ function checkUrl(str: string) {
 export async function POST(request: NextRequest) {
   noStore();
   try {
-    const headersList = headers();
-    const host = headersList.get("origin");
+    const host = headers().get("origin");
 
     // get destination from request body & check if it exists in KV
-    const data = await request.json();
+    const { destination } = await request.json();
 
     // check if the destination is a valid URL
-    if (!checkUrl(data.destination)) return NextResponse.json({ error: "INVALID-URL" }, { status: 400 });
+    if (!checkUrl(destination)) return NextResponse.json({ error: "INVALID-URL" }, { status: 400 });
 
-    const { origin, pathname } = new URL(data.destination);
-    const destination = origin + pathname;
+    const { origin, pathname } = new URL(destination);
+    const constructed = origin + pathname;
 
     // create hash of destination (secret used is sha256("89.lc"))
     const hash = createHmac("sha256", "c362920a84adace2d89bc47062935c904ba6984e69cf3d4c8f79529273818c63")
-      .update(destination)
+      .update(constructed)
       .digest("hex")
       .toString()
       .substring(0, 6);
 
     // check if the shortened URL already exists in KV db
-    const exists = await kv.hgetall(hash);
+    const exists = await kv.hgetall(hash + ":root");
 
     // if it exists, return the shortened URL
-    if (exists) return NextResponse.json({ origin: host + "/" + hash, destination: exists.destination, views: exists.views }, { status: 200 });
+    if (exists) return NextResponse.json({ origin: host + "/" + hash, constructed: exists.destination, visits: exists.visits }, { status: 200 });
 
     // add shortened URL to KV db
-    await kv.hset(hash, { destination: destination, views: 0 });
+    await kv.hset(hash + ":root", { destination: constructed, visits: 0 });
 
     // return hash URL
-    return NextResponse.json({ origin: host + "/" + hash, destination: destination, views: 0 }, { status: 200 });
+    return NextResponse.json({ origin: host + "/" + hash, destination: constructed, visits: 0 }, { status: 200 });
   } catch (e) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

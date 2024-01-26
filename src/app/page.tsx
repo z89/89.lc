@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/data-table";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { LoadingDots } from "@/components/ui/loader";
 
 export default function Page() {
   const [error, setError] = useState<{ isError: boolean; message: string }>({ isError: false, message: "" });
+  const [isRefetching, setIsRefetching] = useState<boolean>(false);
   const [result, setResult] = useState<{ isSuccess: boolean; origin: string; destination: string }>({
     isSuccess: false,
     origin: "",
@@ -26,26 +27,35 @@ export default function Page() {
   const { data, isLoading, isError }: any = useQuery<any>({
     queryKey: ["urls"],
     queryFn: async () => {
-      let res = localStorage.getItem("urls");
+      try {
+        const res = localStorage.getItem("urls");
 
-      if (!res) {
-        console.error("failed");
+        if (!res) {
+          localStorage.setItem("urls", JSON.stringify([]));
+          return { urls: [] };
+        }
+
+        const response = await fetch("/api/fetch/root", {
+          method: "POST",
+          mode: "cors",
+          cache: "no-cache",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ origins: [...JSON.parse(res)] }),
+        }).then((res) => res.json());
+
+        if (response.error) {
+          localStorage.setItem("urls", JSON.stringify([]));
+          return { urls: [] };
+        }
+
+        return { urls: response.origins };
+      } catch (e) {
         localStorage.setItem("urls", JSON.stringify([]));
         return { urls: [] };
       }
-
-      const response = await fetch("/api/refresh", {
-        method: "POST",
-        mode: "cors",
-        cache: "no-cache",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ origins: [...JSON.parse(res)] }),
-      }).then((res) => res.json());
-
-      return { urls: response.origins };
     },
     retry: 2,
     gcTime: 2000,
@@ -145,7 +155,7 @@ export default function Page() {
 
                 <Sparkles className="text-slate-400" size={16} />
                 <Button
-                  onClick={() => router.push("/logs?url=" + result.origin)}
+                  onClick={() => router.push("/logs?code=" + result.origin.split("/")[3])}
                   className={`gap-x-2 text-xs bg-blue-600 active:bg-blue-700 hover:bg-blue-700 ${loading && "disabled"}`}
                   variant={"default"}
                 >
@@ -159,9 +169,19 @@ export default function Page() {
       <div className="flex flex-col gap-y-6 h-1/2 max-h-1/2 py-10">
         <div className="flex justify-between items-center">
           <h1>Recently Shortened:</h1>
-          <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["urls"] })}>
+          <Button
+            disabled={isRefetching}
+            onClick={() => {
+              setIsRefetching(true);
+              setTimeout(() => {
+                setIsRefetching(false);
+              }, 500);
+
+              queryClient.invalidateQueries({ queryKey: ["urls"] });
+            }}
+          >
             Refresh
-            <RefreshCcw className="ml-2" size={14} />
+            <RefreshCcw className={`ml-2 ${isRefetching && "animate-spin pointer-events-none"}`} size={14} />
           </Button>
         </div>
         <Table className=" border border-collapse">
@@ -169,7 +189,7 @@ export default function Page() {
             <TableRow className="border">
               <TableHead>Origin</TableHead>
               <TableHead className="">Destination</TableHead>
-              <TableHead className="text-center whitespace-nowrap">Views</TableHead>
+              <TableHead className="text-center whitespace-nowrap">Visits</TableHead>
               <TableHead className="text-right"></TableHead>
             </TableRow>
           </TableHeader>
@@ -200,9 +220,9 @@ export default function Page() {
                         {record.destination}
                       </a>
                     </TableCell>
-                    <TableCell className="text-center">{record.views}</TableCell>
+                    <TableCell className="text-center">{record.visits}</TableCell>
                     <TableCell className="text-right">
-                      <Button onClick={() => router.push("/logs?url=" + record.origin)} className="gap-x-2 text-xs" variant={"link"}>
+                      <Button onClick={() => router.push("/logs?code=" + record.origin.split("/")[3])} className="gap-x-2 text-xs" variant={"link"}>
                         View Logs <ExternalLink className="inline" size={14} />
                       </Button>
                     </TableCell>

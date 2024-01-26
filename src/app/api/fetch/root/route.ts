@@ -7,14 +7,14 @@ export async function POST(request: NextRequest) {
   noStore();
   try {
     // get destination from request body & check if it exists in KV
-    const data = await request.json();
+    const { origins } = await request.json();
 
-    if (data.origins.length < 1) return NextResponse.json({ success: "updating complete" }, { status: 200 });
+    if (origins.length < 1) return NextResponse.json({ origins: [] }, { status: 200 });
 
     const updatedOrigins = await Promise.all(
-      data.origins.map(async (record: any) => {
-        const result: any = await kv.hgetall(record.origin.split("/")[3]);
-        return { ...record, destination: result.destination, views: result.views };
+      origins.map(async (record: any) => {
+        const result: any = await kv.hgetall(record.origin.split("/")[3] + ":root");
+        return { ...record, destination: result.destination, visits: result.visits };
       })
     );
 
