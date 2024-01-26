@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createHmac } from "node:crypto";
 
+import { unstable_noStore as noStore } from "next/cache";
+
 // checks if the URL is valid against nodejs whatwg api
 function checkUrl(str: string) {
   let newURL: URL;
@@ -16,6 +18,7 @@ function checkUrl(str: string) {
 }
 
 export async function POST(request: NextRequest) {
+  noStore();
   try {
     const headersList = headers();
     const host = headersList.get("origin");
@@ -37,17 +40,16 @@ export async function POST(request: NextRequest) {
       .substring(0, 6);
 
     // check if the shortened URL already exists in KV db
-    const exists = await kv.hget(hash, "destination");
-    console.log("exists: ", exists);
+    const exists = await kv.hgetall(hash);
 
     // if it exists, return the shortened URL
-    if (exists) return NextResponse.json({ origin: host + "/" + hash, destination: exists }, { status: 200 });
+    if (exists) return NextResponse.json({ origin: host + "/" + hash, destination: exists.destination, views: exists.views }, { status: 200 });
 
     // add shortened URL to KV db
-    await kv.hset(hash, { destination: destination });
+    await kv.hset(hash, { destination: destination, views: 0 });
 
     // return hash URL
-    return NextResponse.json({ origin: host + "/" + hash, destination: destination }, { status: 200 });
+    return NextResponse.json({ origin: host + "/" + hash, destination: destination, views: 0 }, { status: 200 });
   } catch (e) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

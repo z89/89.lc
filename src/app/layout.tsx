@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 
 import "./globals.css";
+import { TanstackProvider } from "./providers/tanstackProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,8 +19,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <div>{children}</div>
+      <body className={`flex h-full w-full justify-center items-center bg-slate-100 p-10 ${inter.className} `}>
+        <TanstackProvider>{children}</TanstackProvider>
         <Analytics />
       </body>
     </html>

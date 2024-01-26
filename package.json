@@ -9,15 +9,27 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.0.2",
+    "@tanstack/react-query": "^5.17.19",
+    "@tanstack/react-query-devtools": "^5.17.21",
+    "@tanstack/react-query-persist-client": "^5.17.19",
     "@vercel/analytics": "^1.1.2",
     "@vercel/kv": "^1.0.1",
+    "add": "^2.0.6",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "idb-keyval": "^6.2.1",
+    "input": "^1.0.1",
     "lucide-react": "^0.315.0",
     "next": "14.1.0",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-spinners": "^0.13.8",
+    "shadcn-ui": "^0.8.0",
+    "tailwind-merge": "^2.2.1",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@types/is-url": "^1.2.32",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

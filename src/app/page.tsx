@@ -1,8 +1,16 @@
 "use client";
 
-import { AudioWaveform, Link2Icon, LinkIcon, Sparkle, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { ExternalLink, LinkIcon, RefreshCcw, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { LoadingDots } from "@/components/ui/loader";
 
 export default function Page() {
   const [error, setError] = useState<{ isError: boolean; message: string }>({ isError: false, message: "" });
@@ -11,7 +19,40 @@ export default function Page() {
     origin: "",
     destination: "",
   });
+
+  const queryClient = useQueryClient();
+
   const [loading, setLoading] = useState<boolean>(false);
+  const { data, isLoading, isError }: any = useQuery<any>({
+    queryKey: ["urls"],
+    queryFn: async () => {
+      let res = localStorage.getItem("urls");
+
+      if (!res) {
+        console.error("failed");
+        localStorage.setItem("urls", JSON.stringify([]));
+        return { urls: [] };
+      }
+
+      const response = await fetch("/api/refresh", {
+        method: "POST",
+        mode: "cors",
+        cache: "no-cache",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ origins: [...JSON.parse(res)] }),
+      }).then((res) => res.json());
+
+      return { urls: response.origins };
+    },
+    retry: 2,
+    gcTime: 2000,
+    staleTime: 1000,
+  });
+
+  const router = useRouter();
 
   const shortenURL = async (e: any) => {
     try {
@@ -46,6 +87,13 @@ export default function Page() {
       }
 
       setResult({ isSuccess: true, origin: response.origin, destination: response.destination });
+
+      const oldData: any = queryClient.getQueryData(["urls"]);
+      const newData = oldData.urls.filter((record: any) => record.origin !== response.origin);
+
+      queryClient.setQueryData(["urls"], { urls: [response, ...newData] });
+
+      localStorage.setItem("urls", JSON.stringify([response, ...newData]));
     } catch (e) {
       setError({ isError: true, message: "An unknown error occurred. Please try again." });
     } finally {
@@ -54,60 +102,122 @@ export default function Page() {
   };
 
   return (
-    <div className="flex flex-col h-screen justify-center items-center  bg-slate-100">
-      <div className="flex pb-32 flex-col z-40 h-full justify-center items-center gap-y-8 ">
-        <h1 className="text-9xl tracking-tighter font-bold  text-slate-900">89.lc</h1>
-        <form className="flex w-[50rem] gap-x-6 h-12 justify-center" onSubmit={shortenURL}>
-          <div className={`flex bg-blue-600 items-center w-full ${loading && "opacity-60 pointer-events-none"}`}>
+    <div className="flex flex-col h-full w-full max-w-4xl">
+      <div className="flex flex-col h-1/2 w-full justify-end items-center gap-y-8">
+        <h1 className="text-8xl tracking-tighter font-bold  text-slate-900">89.lc</h1>
+        <form className="flex w-full gap-x-6 h-12 justify-center" onSubmit={shortenURL}>
+          <div className={`flex items-center w-full`}>
             <LinkIcon className="text-black absolute ml-3 pointer-events-none opacity-40" size={18} />
-            <input
-              className={`${error.isError && "border-red-400"} bg-white border w-full h-full pl-10 outline-none py-1 px-2 text-lg`}
+            <Input
+              className={`${error.isError && "border-red-400"} bg-white border w-full h-full !pl-10 py-1 px-2 text-lg ${loading && "disabled"}`}
               autoComplete="off"
-              type="text"
-              // type="url"
+              type="url"
               placeholder="Enter a URL (eg. https://google.com)"
               name="url"
               maxLength={500}
             />
           </div>
-          <input
-            className={`bg-blue-600 py-1 px-3 w-36 text-white font-medium hover:cursor-pointer active:bg-blue-700 hover:bg-blue-700 ${
-              loading && "opacity-80 pointer-events-none"
+          <Button
+            className={`bg-blue-600 py-1 px-3 w-36 h-full text-base  hover:cursor-pointer active:bg-blue-700 hover:bg-blue-700 ${
+              loading && "disabled"
             }`}
             type="submit"
-            value="Shorten"
-          />
+          >
+            Shorten
+          </Button>
         </form>
         <div className="flex w-full h-10 justify-center items-center">
           {error.isError && <h1 className="text-red-500">{error.message}</h1>}
-          {result.isSuccess && !error.isError && (
-            <div className="flex justify-center items-center gap-x-6 ">
-              <a
-                className="text-blue-600 hover:text-blue-800 font-semibold tracking-tight text-xl"
-                target="_blank"
-                rel="noopener noreferrer"
-                href={result.origin}
-              >
-                {result.origin}
-              </a>
+          {loading ? (
+            <LoadingDots invert={true} />
+          ) : (
+            result.isSuccess &&
+            !error.isError && (
+              <div className="flex justify-center items-center gap-x-6 ">
+                <a
+                  className="text-blue-600 hover:text-blue-800 font-medium  tracking-tight text-lg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href={result.origin}
+                >
+                  {result.origin}
+                </a>
 
-              <Sparkles className="text-slate-400" size={16} />
-              <button
-                className={`bg-blue-600 py-2 px-2 w-28 text-sm text-white font-medium hover:cursor-pointer active:bg-blue-700 hover:bg-blue-700 ${
-                  loading && "opacity-80 pointer-events-none"
-                }`}
-                type="button"
-              >
-                Logs
-              </button>
-            </div>
+                <Sparkles className="text-slate-400" size={16} />
+                <Button
+                  onClick={() => router.push("/logs?url=" + result.origin)}
+                  className={`gap-x-2 text-xs bg-blue-600 active:bg-blue-700 hover:bg-blue-700 ${loading && "disabled"}`}
+                  variant={"default"}
+                >
+                  View Logs <ExternalLink className="inline" size={14} />
+                </Button>
+              </div>
+            )
           )}
         </div>
       </div>
-
-      <div className="ocean">
-        <div className="wave" />
-        <div className="wave" />
+      <div className="flex flex-col gap-y-6 h-1/2 max-h-1/2 py-10">
+        <div className="flex justify-between items-center">
+          <h1>Recently Shortened:</h1>
+          <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["urls"] })}>
+            Refresh
+            <RefreshCcw className="ml-2" size={14} />
+          </Button>
+        </div>
+        <Table className=" border border-collapse">
+          <TableHeader>
+            <TableRow className="border">
+              <TableHead>Origin</TableHead>
+              <TableHead className="">Destination</TableHead>
+              <TableHead className="text-center whitespace-nowrap">Views</TableHead>
+              <TableHead className="text-right"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="h-24 overflow-scroll">
+            {isLoading ? (
+              <TableRow>
+                <TableCell className="text-center opacity-50" colSpan={4}>
+                  <LoadingDots invert={true} />
+                </TableCell>
+              </TableRow>
+            ) : isError ? (
+              <TableRow>
+                <TableCell className="text-center opacity-50" colSpan={4}>
+                  An error occurred. Please try again.
+                </TableCell>
+              </TableRow>
+            ) : data && data.urls.length > 0 ? (
+              data.urls.map((record: any, idx: number) => {
+                return (
+                  <TableRow key={record.origin + idx}>
+                    <TableCell>
+                      <a className="text-blue-600 hover:text-blue-800 text-sm" target="_blank" rel="noopener noreferrer" href={record.origin}>
+                        {record.origin}
+                      </a>
+                    </TableCell>
+                    <TableCell className="max-w-[200px] w-full overflow-auto">
+                      <a className="text-blue-600 hover:text-blue-800 text-sm" target="_blank" rel="noopener noreferrer" href={record.destination}>
+                        {record.destination}
+                      </a>
+                    </TableCell>
+                    <TableCell className="text-center">{record.views}</TableCell>
+                    <TableCell className="text-right">
+                      <Button onClick={() => router.push("/logs?url=" + record.origin)} className="gap-x-2 text-xs" variant={"link"}>
+                        View Logs <ExternalLink className="inline" size={14} />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            ) : (
+              <TableRow>
+                <TableCell className="text-center text-muted-foreground" colSpan={4}>
+                  No Recently Shortened URLs
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
