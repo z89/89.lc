@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (exists) return NextResponse.json({ origin: host + "/" + hash, constructed: exists.destination, visits: exists.visits }, { status: 200 });
 
     // add shortened URL to KV db
-    await kv.hset(hash + ":root", { destination: constructed, visits: 0 });
+    await kv.hset(hash + ":root", { destination: constructed, visits: 0, created: Date.now() });
 
     // return hash URL
     return NextResponse.json({ origin: host + "/" + hash, destination: constructed, visits: 0 }, { status: 200 });

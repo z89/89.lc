@@ -1,0 +1,4 @@
+- before loading localstorage, check against kv maybe? just to be safeis kv is flushed
+- make errors consistent (instead of messages just return true with status code)
+- correct the ip (it's wrong on deployment)
+- fix caching periods for faster navigation

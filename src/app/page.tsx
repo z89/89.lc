@@ -1,12 +1,12 @@
 "use client";
 
-import { ExternalLink, LinkIcon, RefreshCcw, Sparkles } from "lucide-react";
+import { Copy, ExternalLink, LinkIcon, RefreshCcw, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/data-table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -168,7 +168,7 @@ export default function Page() {
       </div>
       <div className="flex flex-col gap-y-6 h-1/2 max-h-1/2 py-10">
         <div className="flex justify-between items-center">
-          <h1>Recently Shortened:</h1>
+          <h1 className="font-medium text-sm">Recently Shortened:</h1>
           <Button
             disabled={isRefetching}
             onClick={() => {
@@ -211,14 +211,30 @@ export default function Page() {
                 return (
                   <TableRow key={record.origin + idx}>
                     <TableCell>
-                      <a className="text-blue-600 hover:text-blue-800 text-sm" target="_blank" rel="noopener noreferrer" href={record.origin}>
-                        {record.origin}
-                      </a>
+                      <div className="flex items-center gap-x-2">
+                        <a className="text-blue-600 hover:text-blue-800 text-sm" target="_blank" rel="noopener noreferrer" href={record.origin}>
+                          {record.origin}
+                        </a>
+
+                        <Copy
+                          className="cursor-pointer text-slate-400 hover:text-slate-900"
+                          size={16}
+                          onClick={() => navigator.clipboard.writeText(record.origin)}
+                        />
+                      </div>
                     </TableCell>
                     <TableCell className="max-w-[200px] w-full overflow-auto">
-                      <a className="text-blue-600 hover:text-blue-800 text-sm" target="_blank" rel="noopener noreferrer" href={record.destination}>
-                        {record.destination}
-                      </a>
+                      <div className="flex items-center gap-x-2">
+                        <a className="text-blue-600 hover:text-blue-800 text-sm" target="_blank" rel="noopener noreferrer" href={record.destination}>
+                          {record.destination}
+                        </a>
+
+                        <Copy
+                          className="cursor-pointer text-slate-400 hover:text-slate-900"
+                          size={16}
+                          onClick={() => navigator.clipboard.writeText(record.destination)}
+                        />
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">{record.visits}</TableCell>
                     <TableCell className="text-right">
@@ -231,7 +247,7 @@ export default function Page() {
               })
             ) : (
               <TableRow>
-                <TableCell className="text-center text-muted-foreground" colSpan={4}>
+                <TableCell className="text-center text-muted-foreground py-10" colSpan={4}>
                   No Recently Shortened URLs
                 </TableCell>
               </TableRow>

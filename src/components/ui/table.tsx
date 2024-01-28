@@ -21,7 +21,7 @@ const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes
   <tbody
     ref={ref}
     className={cn(
-      "[&_tr:last-child]:border-0  [&>*:nth-child(even)]:bg-slate-300 ![&>*:nth-child(even)]:border-blue-500 [&>*:nth-child(even)]:bg-opacity-30",
+      "[&_tr:last-child]:border-0  [&>*:nth-child(even)]:bg-slate-300 ![&>*:nth-child(even)]:border-blue-500 [&>*:nth-child(even)]:bg-opacity-20",
       className
     )}
     {...props}

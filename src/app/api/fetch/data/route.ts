@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (!code) return NextResponse.json({ error: true }, { status: 404 });
 
     const root = await kv.hgetall(code + ":root");
-    const data = await kv.zrange(code + ":data", 0, 9, { rev: true });
+    const data = await kv.zrange(code + ":data", 0, 10, { rev: true });
     if (!root) return NextResponse.json({ error: true }, { status: 404 });
 
     return NextResponse.json({ root: { origin: host + "/" + code, ...root }, data: data }, { status: 200 });

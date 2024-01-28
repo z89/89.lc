@@ -1,195 +1,213 @@
 "use client";
 
-import * as React from "react";
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, RefreshCcw } from "lucide-react";
+import { ColumnDef, SortingState, flexRender, getCoreRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
+import { ArrowUpDown, Cpu, ExternalLink } from "lucide-react";
 
+import { useState } from "react";
+import dayjs from "dayjs";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const data: Payment[] = [
-  {
-    id: "m5gr84i9",
-    amount: 316,
-    status: "success",
-    email: "ken99@yahoo.com",
-  },
-  {
-    id: "3u1reuv4",
-    amount: 242,
-    status: "success",
-    email: "Abe45@gmail.com",
-  },
-  {
-    id: "derv1ws0",
-    amount: 837,
-    status: "processing",
-    email: "Monserrat44@gmail.com",
-  },
-  {
-    id: "5kma53ae",
-    amount: 874,
-    status: "success",
-    email: "Silas22@gmail.com",
-  },
-  {
-    id: "bhqecj4p",
-    amount: 721,
-    status: "failed",
-    email: "carmella@hotmail.com",
-  },
-];
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/data-table";
+import Image from "next/image";
 
-export type Payment = {
-  id: string;
-  amount: number;
-  status: "pending" | "processing" | "success" | "failed";
-  email: string;
+type Address = {
+  ip: string;
+  isp: string;
+  city: string;
+  state: string;
+  country: string;
+  country_flag: string;
+  postal_code: string;
+  latitude: string;
+  longitude: string;
 };
 
-export const columns: ColumnDef<Payment>[] = [
+type Device = {
+  browser: string;
+  machine: string;
+  cpu: string;
+};
+
+export type Log = {
+  timestamp: string;
+  address: Address;
+  device: Device;
+  user_agent: string;
+};
+
+export const columns: ColumnDef<Log>[] = [
   {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />,
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("status")}</div>,
-  },
-  {
-    accessorKey: "email",
+    accessorKey: "timestamp",
     header: ({ column }) => {
       return (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Email
+        <Button className="text-xs" variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Date
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
-    cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
+    cell: ({ row }) => (
+      <div className="flex justify-center items-center flex-col px-4 gap-y-1">
+        <p className="font-medium">{dayjs(row.getValue("timestamp")).format("LTS")}</p>
+        <p style={{ fontSize: "10px" }}>{dayjs(row.getValue("timestamp")).format("MMM Do, YYYY")}</p>
+      </div>
+    ),
   },
   {
-    accessorKey: "amount",
-    header: () => <div className="text-right">Amount</div>,
+    accessorKey: "address",
+    header: ({ column }) => {
+      return (
+        <Button className="text-xs" variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          IP/Provider
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="flex justify-center items-center flex-col px-4 gap-y-1">
+        <p className="font-medium">{row.original.address.ip}</p>
+        <p style={{ fontSize: "10px" }}>{row.original.address.isp ?? "N/A"}</p>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "country",
+    header: ({ column }) => {
+      return (
+        <Button className="text-xs" variant="ghost">
+          Country
+        </Button>
+      );
+    },
     cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"));
-
-      // Format the amount as a dollar amount
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(amount);
-
-      return <div className="text-right font-medium">{formatted}</div>;
+      return (
+        <div className="flex px-4 gap-x-3 items-center">
+          <div className="w-8 h-auto">
+            <Image alt="country flag" src={row.original.address.country_flag} width={1} height={1} layout="responsive" />
+          </div>
+          <div className="flex  flex-col justify-center ">
+            <p className="font-medium">{row.original.address.city ?? "N/A"}</p>
+            <p style={{ fontSize: "10px" }}>{row.original.address.country ?? "N/A"}</p>
+          </div>
+        </div>
+      );
     },
   },
   {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const payment = row.original;
-
+    accessorKey: "device",
+    header: ({ column }) => {
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(payment.id)}>Copy payment ID</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button className="text-xs" variant="ghost">
+          Browser/Device
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return (
+        <div className="flex flex-col gap-y-2 items-center">
+          <div className="flex gap-x-2 items-center">
+            <div className="w-4 h-auto">
+              <Image alt="country flag" src={`/images/${row.original.device.browser.toLowerCase()}.png`} width={1} height={1} layout="responsive" />
+            </div>
+            <p>{row.original.device.browser ?? "N/A"}</p>
+          </div>
+          <div className="flex gap-x-2 items-center">
+            <div className="w-4 h-auto">
+              <Image alt="country flag" src={`/images/${row.original.device.machine.toLowerCase()}.png`} width={1} height={1} layout="responsive" />
+            </div>
+            <p>{row.original.device.machine ?? "N/A"}</p>
+            {row.original.device.cpu && (
+              <div className="flex gap-x-1">
+                <Cpu className="h-4 w-4" />
+                <p>{row.original.device.cpu ?? "N/A"}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "raw",
+    header: ({ column }) => {
+      return (
+        <Button className="text-xs" variant="ghost">
+          User Agent
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return (
+        <div className="flex flex-col gap-y-2 items-center">
+          <textarea readOnly value={row.original.user_agent} className="max-h-36 min-h-8 border rounded-md p-2 bg-slate-100" />
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "map",
+    header: ({ column }) => {
+      return (
+        <Button className="text-xs" variant="ghost">
+          Map
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return (
+        <>
+          {!row.original.address.latitude || !row.original.address.longitude ? (
+            <div className="flex justify-center items-center">
+              <p>N/A</p>
+            </div>
+          ) : (
+            <div className="flex gap-x-1 justify-center items-center  text-blue-500 hover:text-blue-800">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${row.original.address.latitude},${row.original.address.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Google Maps
+              </a>
+              <ExternalLink className="inline" size={14} />
+            </div>
+          )}
+        </>
       );
     },
   },
 ];
 
-export function DataTable() {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
+interface DataTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
+}
+
+export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const table = useReactTable({
     data,
     columns,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
+    autoResetPageIndex: false,
     state: {
       sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
     },
   });
 
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4">
-        <Button
-          disabled={false}
-          onClick={() => {
-            //   setIsRefetching(true);
-            //   setTimeout(() => {
-            //     setIsRefetching(false);
-            //   }, 500);
-            //   queryClient.invalidateQueries({ queryKey: ["urls"] });
-          }}
-        >
-          Refresh
-          <RefreshCcw className={`ml-2 ${false && "animate-spin pointer-events-none"}`} size={14} />
-        </Button>
-      </div>
-      <div className="rounded-md border">
-        <Table>
+    <div className="flex flex-col rounded-md p-2 pt-0 h-min border w-full">
+      <div className="rounded-md overflow-auto">
+        <Table className="text-xs">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead className="text-center" key={header.id}>
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
@@ -197,10 +215,10 @@ export function DataTable() {
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
+          <TableBody className="text-xs overflow-auto">
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow className="hover:cursor-pointer" key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
@@ -209,25 +227,12 @@ export function DataTable() {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  No visits to URL
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-            Previous
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-            Next
-          </Button>
-        </div>
       </div>
     </div>
   );
