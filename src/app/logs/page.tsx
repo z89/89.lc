@@ -25,6 +25,7 @@ import { DataTable, columns } from "./table";
 import { useState } from "react";
 
 export default function Page() {
+  // get the origin code from the url
   const params = useSearchParams();
   const code = params.get("code");
 
@@ -34,6 +35,7 @@ export default function Page() {
 
   const router = useRouter();
 
+  // fetch the data for origin
   const { data, isLoading, isError }: any = useQuery<any>({
     queryKey: [`${code}:data`],
     queryFn: async () => {

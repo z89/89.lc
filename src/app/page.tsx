@@ -23,6 +23,7 @@ export default function Page() {
 
   const queryClient = useQueryClient();
 
+  // fetch the origins (shortened urls)
   const [loading, setLoading] = useState<boolean>(false);
   const { data, isLoading, isError }: any = useQuery<any>({
     queryKey: ["urls"],
@@ -35,7 +36,7 @@ export default function Page() {
           return { urls: [] };
         }
 
-        const response = await fetch("/api/fetch/root", {
+        const response = await fetch("/api/fetch/origins", {
           method: "POST",
           mode: "cors",
           cache: "no-cache",
@@ -207,38 +208,37 @@ export default function Page() {
                 </TableCell>
               </TableRow>
             ) : data && data.urls.length > 0 ? (
-              data.urls.map((record: any, idx: number) => {
+              data.urls.map((url: any, idx: number) => {
                 return (
-                  <TableRow key={record.origin + idx}>
+                  <TableRow key={url.origin + idx}>
                     <TableCell>
                       <div className="flex items-center gap-x-2">
-                        <a className="text-blue-600 hover:text-blue-800 text-sm" target="_blank" rel="noopener noreferrer" href={record.origin}>
-                          {record.origin}
+                        <a className="text-blue-600 hover:text-blue-800 text-sm" target="_blank" rel="noopener noreferrer" href={url.origin}>
+                          {url.origin}
                         </a>
 
                         <Copy
                           className="cursor-pointer text-slate-400 hover:text-slate-900"
                           size={16}
-                          onClick={() => navigator.clipboard.writeText(record.origin)}
+                          onClick={() => navigator.clipboard.writeText(url.origin)}
                         />
                       </div>
                     </TableCell>
                     <TableCell className="max-w-[200px] w-full overflow-auto">
                       <div className="flex items-center gap-x-2">
-                        <a className="text-blue-600 hover:text-blue-800 text-sm" target="_blank" rel="noopener noreferrer" href={record.destination}>
-                          {record.destination}
+                        <a className="text-blue-600 hover:text-blue-800 text-sm" target="_blank" rel="noopener noreferrer" href={url.destination}>
+                          {url.destination}
                         </a>
-
                         <Copy
                           className="cursor-pointer text-slate-400 hover:text-slate-900"
                           size={16}
-                          onClick={() => navigator.clipboard.writeText(record.destination)}
+                          onClick={() => navigator.clipboard.writeText(url.destination)}
                         />
                       </div>
                     </TableCell>
-                    <TableCell className="text-center">{record.visits}</TableCell>
+                    <TableCell className="text-center">{url.visits}</TableCell>
                     <TableCell className="text-right">
-                      <Button onClick={() => router.push("/logs?code=" + record.origin.split("/")[3])} className="gap-x-2 text-xs" variant={"link"}>
+                      <Button onClick={() => router.push("/logs?code=" + url.origin.split("/")[3])} className="gap-x-2 text-xs" variant={"link"}>
                         View Logs <ExternalLink className="inline" size={14} />
                       </Button>
                     </TableCell>
